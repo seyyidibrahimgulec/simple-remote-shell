@@ -1,53 +1,62 @@
-#include <unistd.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/types.h>
-#include <sys/wait.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <errno.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <string.h>
+#include <stdlib.h>
+#include <netdb.h>
 
-#define MAX_LINE 80
-#define FIFO1 "/tmp/fifo.1"
-#define FIFO2 "/tmp/fifo.2"
+#define PORT 3490
+#define BLOCKSIZE 1000
 
-void client(int, int );
+int main(int argc, char *argv[]) {
+    int sockfd, numbytes, i;
+    char buf[BLOCKSIZE], buffer[BLOCKSIZE];
+    struct hostent *he;
+    struct sockaddr_in their_addr; // server's address information
 
-int main (int argc, char *argv[])  {
+    if(argc != 2) {
+        fprintf(stderr, "usage: client hostname\n");
+        exit(1);
+    }
 
-	int readfd, writefd;
+    if((he=gethostbyname(argv[1])) == NULL) {
+        // get the host info
+        perror("gethostbyname");
+        exit(1);
+    }
 
-	writefd = open(FIFO1, O_WRONLY);
-	readfd  = open(FIFO2, O_RDONLY);
+    if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
+        perror("socket");
+        exit(1);
+    }
 
-	client(readfd, writefd);
+    their_addr.sin_family = AF_INET;
+    their_addr.sin_port = htons(PORT);
+    their_addr.sin_addr = *((struct in_addr *)he->h_addr);
+    memset(&(their_addr.sin_zero), '\0', 8);
 
-	close(readfd);
-	close(writefd);
 
-	unlink(FIFO1);
-	unlink(FIFO2);
+    if(connect(sockfd, (struct sockaddr *)&their_addr, sizeof(struct sockaddr)) == -1) {
+        perror("connect");
+        exit(1);
+    }
+    while(1) {
+        printf("> ");
+        fgets(buf, BLOCKSIZE, stdin);
+        send(sockfd, buf, BLOCKSIZE, 0);
 
-	exit(0);
+        numbytes = recv(sockfd, buffer, BLOCKSIZE, 0);
+
+        buffer[numbytes] = '\0';
+
+        printf("%s\n", buffer);
+
+        memset(buffer, 0, BLOCKSIZE);
+        memset(buf, 0, BLOCKSIZE);
+    }
+    close(sockfd);
+    return 0;
 }
-
-void client (int readfd, int writefd ) {
-
-	size_t len;
-	size_t n;
-	char buff[MAX_LINE];
-
-	printf("enter a file name\n");
-	fgets(buff, MAX_LINE, stdin);
-	len = strlen(buff);
-	if(buff[len-1]=='\n')
-		len--;
-
-	write(writefd, buff, len);
-	printf("\nsending file name to server\n\n", buff);
-
-	while((n =read(readfd, buff, MAX_LINE))>0)
-		write(STDOUT_FILENO, buff, n);
-}
-
