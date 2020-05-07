@@ -1,0 +1,10 @@
+Installation
+$ make
+
+Usage
+$ ./server -p 5000 -u user -p pass
+$ ./client -h 127.0.0.1 -p 5000 -u user -p password
+
+
+
+

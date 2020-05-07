@@ -1,4 +1,8 @@
 client.o
 server.o
+
 client
 server
+
+.DS_Store
+

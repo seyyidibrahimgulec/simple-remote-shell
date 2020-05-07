@@ -8,13 +8,12 @@
 #include <stdlib.h>
 
 
-#define MYPORT 3490
 #define BACKLOG 10
 #define LINESIZE 1024
 #define BLOCKSIZE 1000
 
 
-int main(void) {
+int main(int argc, char *argv[]) {
     int sockfd, new_fd, numbytes;
     struct sockaddr_in my_addr;
     struct sockaddr_in their_addr;
@@ -28,7 +27,7 @@ int main(void) {
     }
 
     my_addr.sin_family = AF_INET;
-    my_addr.sin_port = htons(MYPORT);
+    my_addr.sin_port = htons(atoi(argv[2]));
     my_addr.sin_addr.s_addr = INADDR_ANY;
     memset(&(my_addr.sin_zero), '\0', 8);
 
@@ -50,6 +49,22 @@ int main(void) {
         }
 
         printf("server: got connection from %s\n", inet_ntoa(their_addr.sin_addr));
+
+        numbytes = recv(new_fd, buf, BLOCKSIZE, 0);
+        buffer[numbytes] = '\0';
+        if(strcmp(buf, argv[4])) {
+            close(new_fd);
+            return -1;
+        }
+        memset(buf, 0, BLOCKSIZE);
+
+        numbytes = recv(new_fd, buf, BLOCKSIZE, 0);
+        buffer[numbytes] = '\0';
+        if(strcmp(buf, argv[6])) {
+            close(new_fd);
+            return -1;
+        }
+        memset(buf, 0, BLOCKSIZE);
 
         while(1) {
             numbytes = recv(new_fd, buf, BLOCKSIZE, 0);

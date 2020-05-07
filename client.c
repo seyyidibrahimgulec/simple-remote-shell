@@ -8,21 +8,15 @@
 #include <stdlib.h>
 #include <netdb.h>
 
-#define PORT 3490
 #define BLOCKSIZE 1000
 
 int main(int argc, char *argv[]) {
-    int sockfd, numbytes, i;
+    int sockfd, numbytes;
     char buf[BLOCKSIZE], buffer[BLOCKSIZE];
     struct hostent *he;
     struct sockaddr_in their_addr; // server's address information
 
-    if(argc != 2) {
-        fprintf(stderr, "usage: client hostname\n");
-        exit(1);
-    }
-
-    if((he=gethostbyname(argv[1])) == NULL) {
+    if((he=gethostbyname(argv[2])) == NULL) {
         // get the host info
         perror("gethostbyname");
         exit(1);
@@ -34,7 +28,7 @@ int main(int argc, char *argv[]) {
     }
 
     their_addr.sin_family = AF_INET;
-    their_addr.sin_port = htons(PORT);
+    their_addr.sin_port = htons(atoi(argv[4]));
     their_addr.sin_addr = *((struct in_addr *)he->h_addr);
     memset(&(their_addr.sin_zero), '\0', 8);
 
@@ -43,6 +37,10 @@ int main(int argc, char *argv[]) {
         perror("connect");
         exit(1);
     }
+
+    send(sockfd, argv[6], BLOCKSIZE, 0);
+    send(sockfd, argv[8], BLOCKSIZE, 0);
+
     while(1) {
         printf("> ");
         fgets(buf, BLOCKSIZE, stdin);
